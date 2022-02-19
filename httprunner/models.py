@@ -1,3 +1,5 @@
+# 定义各种model类,以BaseModel为父类
+
 import os
 from enum import Enum
 from typing import Any
