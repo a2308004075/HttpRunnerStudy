@@ -1,3 +1,5 @@
+# 定义了失败类型的异常信息
+
 """ failure type exceptions
     these exceptions will mark test as failure
 """

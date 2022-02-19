@@ -1,3 +1,4 @@
+# 提供各种处理兼容性的方法,包括让v2版本的用例能在v3版本继续运行的相关转换方法
 """
 This module handles compatibility issues between testcase format v2 and v3.
 """

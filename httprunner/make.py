@@ -1,3 +1,4 @@
+# 主要集成参数使之生效在测试用例中，如config、request、teststep等等，构成一个可用的用例
 import os
 import string
 import subprocess

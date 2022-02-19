@@ -1,3 +1,5 @@
+# 客户端相关方法,主要是封装 requests.Session.request,安全调用,输出log等, 给runner.py调用.
+
 import json
 import time
 
