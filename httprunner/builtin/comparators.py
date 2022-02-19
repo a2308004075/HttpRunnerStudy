@@ -1,4 +1,5 @@
 """
+内置验证校验器
 Built-in validate comparators.
 """
 
