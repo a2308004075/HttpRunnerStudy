@@ -1,3 +1,5 @@
+# 处理响应报文格式
+
 from typing import Dict, Text, Any, NoReturn
 
 import jmespath

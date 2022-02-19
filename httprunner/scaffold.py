@@ -1,3 +1,5 @@
+# 创建项目脚手架，生成框架的基本模板
+
 import os.path
 import subprocess
 import sys
