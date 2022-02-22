@@ -14,7 +14,8 @@ from httprunner.parser import parse_data, parse_string_value, get_mapping_functi
 
 
 def get_uniform_comparator(comparator: Text):
-    """ convert comparator alias to uniform name
+    """
+    将比较器别名转换为统一名称
     """
     if comparator in ["eq", "equals", "equal"]:
         return "equal"
@@ -54,7 +55,9 @@ def get_uniform_comparator(comparator: Text):
 
 
 def uniform_validator(validator):
-    """ unify validator
+    """
+    统一验证器
+    由于3和2的验证格式不一致，所以写了这个函数来兼容旧版本的格式
 
     Args:
         validator (dict): validator maybe in two formats:
@@ -109,16 +112,17 @@ def uniform_validator(validator):
     assert_method = get_uniform_comparator(comparator)
 
     return {
-        "check": check_item,
-        "expect": expect_value,
-        "assert": assert_method,
-        "message": message,
+        "check": check_item,    # 想断言的字段，e.g. stats_code
+        "expect": expect_value, # 期望值
+        "assert": assert_method,    # 断言的方法，e.g. eq
+        "message": message, # 默认是空字符串
     }
 
 
 class ResponseObject(object):
     def __init__(self, resp_obj: requests.Response):
-        """ initialize with a requests.Response object
+        """
+        初始化response.Response对象，提取报文字段，校验断言
 
         Args:
             resp_obj (instance): requests.Response instance
