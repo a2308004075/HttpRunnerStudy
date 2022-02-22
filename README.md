@@ -36,7 +36,7 @@ jmespath = "^0.9.5"   # json 提取
 black = "^19.10b0"    # python 代码格式化工具
 pytest = "^5.4.2"     # 单元测试框架
 pytest-html = "^2.1.1"  # 简易html报告
-sentry-sdk = "^0.14.4"  # 没get到xx[好像是版本相关的]
+sentry-sdk = "^0.14.4"  # 捕捉异常
 allure-pytest = "^2.8.16" # allure 报告
 requests-toolbelt = "^0.9.1"  # 估计是上传文件用到的
 filetype = "^1.0.7"   # 文件类型判断
@@ -71,22 +71,22 @@ hrun demo
 
 ```shell
 │  cli.py       # 命令封装
-│  client.py    # 请求方法逻辑
-│  compat.py    # 处理testcase格式v2和v3之间的兼容性问题。
+│  client.py    # request封装，网络请求client
+│  compat.py    # 用例适配，处理testcase格式v2和v3之间的兼容性问题。
 │  exceptions.py  # 自定义异常
-│  loader.py    # 加载文件、环境变量、参数化
-│  make.py      # 生产测试文件
+│  loader.py    # 加载用例设计文件JSON/YAML、环境变量、参数化，生成model定义的测试数据
+│  make.py      # 依据测试数据生产pytest测试文件，并格式化生成的python代码
 │  models.py    # pydantic 数据模型定义
-│  parser.py    # 解析自定义语法`$name`，`${func(5)}`
-│  response.py  # 响应内容处理，断言逻辑
+│  parser.py    # 参数解析器，解析用例当中引用变量、自定义方法等
+│  response.py  # 响应内容处理：断言、变量提取
 │  runner.py    # 执行/启动器
-│  scaffold.py  # HttpRunner 脚手架
-│  testcase.py  # 测试用例的方法封装
+│  scaffold.py  # HttpRunner 脚手架，快速生成httprunner测试项目
+│  testcase.py  # 测试用例对象封装
 │  utils.py     # 工具类
-│  __init__.py  # 部分包聚集地
-│  __main__.py  # cli 的 测试启动文件
+│  __init__.py  # 初始化文件，指定httprunner库包含的模块
+│  __main__.py  # httprunner命令入库，调用cli.py的main函数
 │
-├─app     # FastAPI 应用程序 [可能和官方要出的平台有点关系]
+├─app     # 网络服务模块
 │  │  main.py
 │  │  __init__.py
 │  │
@@ -96,20 +96,20 @@ hrun demo
 │     │  deps.py
 │     └─__init__.py
 │ 
-├─builtin
+├─builtin # 内置方法、校验比较器，供YAML/JSON用例设计文件中testcases使用
 │  │  comparators.py
 │  │  functions.py
 │  └─__init__.py
 │
-└─ext
+└─ext # 扩展功能
    │  __init__.py
    │
-   ├─har2case     # har 文件 转 测试用例
+   ├─har2case     # har 文件 转 httprunner测试用例文件
    │  │  core.py
    │  │  utils.py
    │  └─__init__.py
    │          
-   ├─locust      # 性能测试相关[本次略过]
+   ├─locust      # 性能测试相关
    │  │  locustfile.py
    │  └─__init__.py
    │
