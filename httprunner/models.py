@@ -11,7 +11,7 @@ from pydantic import HttpUrl
 
 Name = Text
 Url = Text
-BaseUrl = Union[HttpUrl, Text]
+BaseUrl = Union[HttpUrl, Text]  # 表示即可以是HttpUrl，也可以是Text
 VariablesMapping = Dict[Text, Any]
 FunctionsMapping = Dict[Text, Callable]
 Headers = Dict[Text, Text]
