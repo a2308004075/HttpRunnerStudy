@@ -3,7 +3,7 @@
 import os
 from enum import Enum
 from typing import Any
-from typing import Dict, Text, Union, Callable
+from typing import Dict, Text, Union, Callable  # Callable是一个可调用对象类型
 from typing import List
 
 from pydantic import BaseModel, Field
