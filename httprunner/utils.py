@@ -267,7 +267,7 @@ def merge_variables(
 
 def is_support_multiprocessing() -> bool:
     """
-    支持多进程，如：Android termux
+    判断是否支持多进程，如：Android termux
     """
     try:
         Queue()
