@@ -18,30 +18,46 @@ from httprunner.models import RequestData, ResponseData
 from httprunner.models import SessionData, ReqRespData
 from httprunner.utils import lower_dict_keys, omit_long_data
 
+# 屏蔽https证书警告
+"""
+使用Python3 requests发送HTTPS请求，已经关闭认证（verify=False）情况下，控制台会输出错误。在代码中禁用安全请求警告
+"""
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
 class ApiResponse(Response):
+    """
+    继承了requests模块中的Response类，重写了里面的raise_for_status方法
+    """
     def raise_for_status(self):
+        # hasattr判断是否含有指定标记
         if hasattr(self, "error") and self.error:
             raise self.error
         Response.raise_for_status(self)
 
 
 def get_req_resp_record(resp_obj: Response) -> ReqRespData:
-    """ get request and response info from Response() object.
+    """
+    从 Response()对象获取请求记录和响应记录
+
+    :param resp_obj: Response响应
+    :return: 返回自定义的ReqResData模型类
     """
 
     def log_print(req_or_resp, r_type):
+        """
+        日志打印，格式为标准的json
+        """
         msg = f"\n================== {r_type} details ==================\n"
         for key, value in req_or_resp.dict().items():
+            # 如果value中还包含着dict或者list，就把value转成json格式
             if isinstance(value, dict) or isinstance(value, list):
                 value = json.dumps(value, indent=4, ensure_ascii=False)
 
             msg += "{:<8} : {}\n".format(key, value)
         logger.debug(msg)
 
-    # record actual request info
+    # 记录实际请求信息（请求头、cookie信息、请求体）
     request_headers = dict(resp_obj.request.headers)
     request_cookies = resp_obj.request._cookies.get_dict()
 
@@ -59,6 +75,7 @@ def get_req_resp_record(resp_obj: Response) -> ReqRespData:
             # neither str nor bytes/bytearray, e.g. <MultipartEncoder>
             pass
 
+        # lower_dict_keys的作用是将字典中的key大写转小写
         request_content_type = lower_dict_keys(request_headers).get("content-type")
         if request_content_type and "multipart/form-data" in request_content_type:
             # upload file type
@@ -72,10 +89,10 @@ def get_req_resp_record(resp_obj: Response) -> ReqRespData:
         body=request_body,
     )
 
-    # log request details in debug mode
+    # lower_dict_keys的作用是将字典中的key大写转小写
     log_print(request_data, "request")
 
-    # record response info
+    # 记录响应信息
     resp_headers = dict(resp_obj.headers)
     lower_resp_headers = lower_dict_keys(resp_headers)
     content_type = lower_resp_headers.get("content-type", "")
@@ -101,7 +118,7 @@ def get_req_resp_record(resp_obj: Response) -> ReqRespData:
         body=response_body,
     )
 
-    # log response details in debug mode
+    # 在debug模式下打印响应日志
     log_print(response_data, "response")
 
     req_resp_data = ReqRespData(request=request_data, response=response_data)
@@ -110,9 +127,8 @@ def get_req_resp_record(resp_obj: Response) -> ReqRespData:
 
 class HttpSession(requests.Session):
     """
-    Class for performing HTTP requests and holding (session-) cookies between requests (in order
-    to be able to log in and out of websites). Each request is logged so that HttpRunner can
-    display statistics.
+    Class for performing HTTP requests and holding (session-) cookies between requests (为了
+    能够登录和退出网站). 每个请求都被记录下来，这样HttpRunner就可以显示统计数据。
 
     This is a slightly extended version of `python-request <http://python-requests.org>`_'s
     :py:class:`requests.Session` class and mostly this class works exactly the same.
@@ -124,13 +140,22 @@ class HttpSession(requests.Session):
 
     def update_last_req_resp_record(self, resp_obj):
         """
-        update request and response info from Response() object.
+        更新最新的请求响应记录，放入req_resps列表中
         """
         # TODO: fix
         self.data.req_resps.pop()
         self.data.req_resps.append(get_req_resp_record(resp_obj))
 
     def request(self, method, url, name=None, **kwargs):
+        """
+        1.设置了超时时间120s
+        2.计算整个请求花费了多少时间
+        3.定义了客户端ip地址和端口号、服务端ip地址和端口号
+        4.计算了响应体的内容大小
+        5.记录了消耗时间
+        6.记录了request和response记录，包括重定向记录
+        """
+
         """
         Constructs and sends a :py:class:`requests.Request`.
         Returns :py:class:`requests.Response` object.
@@ -226,7 +251,7 @@ class HttpSession(requests.Session):
 
     def _send_request_safe_mode(self, method, url, **kwargs):
         """
-        Send a HTTP request, and catch any exception that might occur due to connection problems.
+        发送一个http请求，并捕获由于连接问题可能发生的任何异常
         Safe mode has been removed from requests 1.x.
         """
         try:
