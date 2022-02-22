@@ -13,24 +13,29 @@ from sentry_sdk import capture_exception
 from httprunner import loader, utils, exceptions
 from httprunner.models import VariablesMapping, FunctionsMapping
 
+# 匹配http://或https://
+# re.I使匹配对大小写不敏感
+# s?  匹配s有0个或1个
 absolute_http_url_regexp = re.compile(r"^https?://", re.I)
 
-# use $$ to escape $ notation
+# 使用$$转义$符号
 dolloar_regex_compile = re.compile(r"\$\$")
-# variable notation, e.g. ${var} or $var
+# 变量符号, e.g. ${var} or $var
 variable_regex_compile = re.compile(r"\$\{(\w+)\}|\$(\w+)")
-# function notation, e.g. ${func1($var_1, $var_3)}
+# 函数符号, e.g. ${func1($var_1, $var_3)}
 function_regex_compile = re.compile(r"\$\{(\w+)\(([\$\w\.\-/\s=,]*)\)\}")
 
 
 def parse_string_value(str_value: Text) -> Any:
-    """ parse string to number if possible
+    """
+    将字符串转换为数字
     e.g. "123" => 123
          "12.2" => 12.3
          "abc" => "abc"
          "$var" => "$var"
     """
     try:
+        # ast.literal_eval函数，将字符串型的list,tuple,dict转变成原有的类型
         return ast.literal_eval(str_value)
     except ValueError:
         return str_value
@@ -40,17 +45,25 @@ def parse_string_value(str_value: Text) -> Any:
 
 
 def build_url(base_url, path):
-    """ prepend url with base_url unless it's already an absolute URL """
+    """
+    在url前面加上base_url，除非它已经是绝对url
+    """
+    # 判断路径是否以https://或者 http://开头
     if absolute_http_url_regexp.match(path):
         return path
     elif base_url:
+        # base_url/path
+        # base_url：http://192.168.34.63/
+        # path：/vb?action=ptz
+        # 拼接后 http://192.168.34.63/vb?action=ptz
         return "{}/{}".format(base_url.rstrip("/"), path.lstrip("/"))
     else:
         raise exceptions.ParamsError("base url missed!")
 
 
 def regex_findall_variables(raw_string: Text) -> List[Text]:
-    """ extract all variable names from content, which is in format $variable
+    """
+    从内容中提取所有变量名，格式为$variable
 
     Args:
         raw_string (str): string content
@@ -73,6 +86,7 @@ def regex_findall_variables(raw_string: Text) -> List[Text]:
 
     """
     try:
+        # 检查字符串中第一个$的位置
         match_start_position = raw_string.index("$", 0)
     except ValueError:
         return []
@@ -80,7 +94,7 @@ def regex_findall_variables(raw_string: Text) -> List[Text]:
     vars_list = []
     while match_start_position < len(raw_string):
 
-        # Notice: notation priority
+        # 注意: 符号优先级
         # $$ > $var
 
         # search $$
@@ -92,6 +106,14 @@ def regex_findall_variables(raw_string: Text) -> List[Text]:
         # search variable like ${var} or $var
         var_match = variable_regex_compile.match(raw_string, match_start_position)
         if var_match:
+            # group(1) 列出第一个括号匹配部分
+            """
+            a = "123abc456"
+            print re.search("([0-9]*)([a-z]*)([0-9]*)",a).group(0)   #123abc456,返回整体
+            print re.search("([0-9]*)([a-z]*)([0-9]*)",a).group(1)   #123
+            print re.search("([0-9]*)([a-z]*)([0-9]*)",a).group(2)   #abc
+            print re.search("([0-9]*)([a-z]*)([0-9]*)",a).group(3)   #456
+            """
             var_name = var_match.group(1) or var_match.group(2)
             vars_list.append(var_name)
             match_start_position = var_match.end()
@@ -109,7 +131,7 @@ def regex_findall_variables(raw_string: Text) -> List[Text]:
 
 
 def regex_findall_functions(content: Text) -> List[Text]:
-    """ extract all functions from string content, which are in format ${fun()}
+    """ 从字符串内容中提取所有函数，格式为${fun()}
 
     Args:
         content (str): string content
@@ -142,7 +164,8 @@ def regex_findall_functions(content: Text) -> List[Text]:
 
 
 def extract_variables(content: Any) -> Set:
-    """ extract all variables in content recursively.
+    """
+    递归提取内容中的所有变量
     """
     if isinstance(content, (list, set, tuple)):
         variables = set()
@@ -163,7 +186,8 @@ def extract_variables(content: Any) -> Set:
 
 
 def parse_function_params(params: Text) -> Dict:
-    """ parse function params to args and kwargs.
+    """
+    将函数参数解析到args和kwargs
 
     Args:
         params (str): function param in string
@@ -214,7 +238,8 @@ def parse_function_params(params: Text) -> Dict:
 def get_mapping_variable(
     variable_name: Text, variables_mapping: VariablesMapping
 ) -> Any:
-    """ get variable from variables_mapping.
+    """
+    获取映射变量
 
     Args:
         variable_name (str): variable name
@@ -239,7 +264,7 @@ def get_mapping_variable(
 def get_mapping_function(
     function_name: Text, functions_mapping: FunctionsMapping
 ) -> Callable:
-    """ get function from functions_mapping,
+    """ 获取映射函数,
         if not found, then try to check if builtin function.
 
     Args:
@@ -289,7 +314,8 @@ def parse_string(
     variables_mapping: VariablesMapping,
     functions_mapping: FunctionsMapping,
 ) -> Any:
-    """ parse string content with variables and functions mapping.
+    """
+    将带有变量和方法的字符串，转为字符串实际内容
 
     Args:
         raw_string: raw string content to be parsed.
@@ -396,7 +422,8 @@ def parse_data(
     variables_mapping: VariablesMapping = None,
     functions_mapping: FunctionsMapping = None,
 ) -> Any:
-    """ parse raw data with evaluated variables mapping.
+    """
+        封装parse_string提供给外部调用
         Notice: variables_mapping should not contain any variable or function.
     """
     if isinstance(raw_data, str):
@@ -429,6 +456,9 @@ def parse_data(
 def parse_variables_mapping(
     variables_mapping: VariablesMapping, functions_mapping: FunctionsMapping = None
 ) -> VariablesMapping:
+    """
+    解析变量映射
+    """
 
     parsed_variables: VariablesMapping = {}
 
@@ -470,14 +500,15 @@ def parse_variables_mapping(
 
 
 def parse_parameters(parameters: Dict,) -> List[Dict]:
-    """ parse parameters and generate cartesian product.
+    """ 解析参数 and 转成笛卡尔积.
 
     Args:
         parameters (Dict) parameters: parameter name and value mapping
             parameter value may be in three types:
-                (1) data list, e.g. ["iOS/10.1", "iOS/10.2", "iOS/10.3"]
-                (2) call built-in parameterize function, "${parameterize(account.csv)}"
-                (3) call custom function in debugtalk.py, "${gen_app_version()}"
+                (1) list列表, e.g. ["iOS/10.1", "iOS/10.2", "iOS/10.3"]
+                (2) 调用内置参数化函数, "${parameterize(account.csv)}"
+                (3) 从debugtalk.py函数中生成：${gen_app_version()}
+
 
     Returns:
         list: cartesian product list
@@ -574,3 +605,9 @@ def parse_parameters(parameters: Dict,) -> List[Dict]:
         parsed_parameters_list.append(parameter_content_list)
 
     return utils.gen_cartesian_product(*parsed_parameters_list)
+
+if __name__ == '__main__':
+    raw_string = "111${}122${}22222"
+    match_start_position = raw_string.index("$", 0)
+    dollar_match = dolloar_regex_compile.match(raw_string, match_start_position).group(1)
+    print(dollar_match)
