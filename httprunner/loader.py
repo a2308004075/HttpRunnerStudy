@@ -380,8 +380,8 @@ def locate_file(start_path: Text, file_name: Text) -> Text:
 
 
 def locate_debugtalk_py(start_path: Text) -> Text:
-    """ locate debugtalk.py file
-    找到debugtalk.py 绝对路径
+    """
+    找到 debugtalk.py文件
     Args:
         start_path (str): start locating path,
             maybe testcase file path or directory path
@@ -400,7 +400,7 @@ def locate_debugtalk_py(start_path: Text) -> Text:
 
 
 def locate_project_root_directory(test_path: Text) -> Tuple[Text, Text]:
-    """ locate debugtalk.py path as project root directory
+    """
     找到项目根目录路径， 和 debugtalk.py 的路径
     Args:
         test_path: specified testfile path
