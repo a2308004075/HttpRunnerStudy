@@ -252,14 +252,15 @@ def ensure_testcase_v3(test_content: Dict) -> Dict:
 
 
 def ensure_cli_args(args: List) -> List:
-    """ ensure compatibility with deprecated cli args in v2
     """
-    # remove deprecated --failfast
+    确保兼容V2弃用的cli args
+    """
+    # 删除弃用 --failfast
     if "--failfast" in args:
         logger.warning(f"remove deprecated argument: --failfast")
         args.pop(args.index("--failfast"))
 
-    # convert --report-file to --html
+    # 改变--report-file 为 --html
     if "--report-file" in args:
         logger.warning(f"replace deprecated argument --report-file with --html")
         index = args.index("--report-file")
