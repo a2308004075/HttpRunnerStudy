@@ -107,8 +107,8 @@ def load_test_file(test_file: Text) -> Dict:
 
 def load_testcase(testcase: Dict) -> TestCase:
     """
-        将字典转成 TestCase对象
-        """
+    将字典转成 TestCase对象
+    """
     try:
         # 使用pydantic TestCase模型进行验证
         # 当成实例化操作就行 TestCase.parse_obj(testcase)
