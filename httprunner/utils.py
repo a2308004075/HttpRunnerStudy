@@ -320,12 +320,12 @@ def gen_cartesian_product(*args: List[Dict]) -> List[Dict]:
     return product_list
 
 if __name__ == '__main__':
-    arg1 = [{"a": 1}, {"a": 2}]
-    arg2 = [{"x": 111, "y": 112}, {"x": 121, "y": 122}]
-    args = [arg1, arg2]
+    import decimal
+    class A(object):
+        pass
 
-    product_list = []
 
-    for product_item_tuple in itertools.product(*args):
-        print(product_item_tuple)
+    print(type(decimal.Decimal("1.45")))
+
+
 
