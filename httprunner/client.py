@@ -159,21 +159,7 @@ class HttpSession(requests.Session):
         self.data.req_resps.pop()
         self.data.req_resps.append(get_req_resp_record(resp_obj))
 
-    def _send_request_safe_mode(self, method, url, **kwargs):
-        """
-        发送一个http请求，并捕获由于连接问题可能发生的任何异常
-        Safe mode has been removed from requests 1.x.
-        """
-        try:
-            return requests.Session.request(self, method, url, **kwargs)
-        except (MissingSchema, InvalidSchema, InvalidURL):
-            raise
-        except RequestException as ex:
-            resp = ApiResponse()
-            resp.error = ex
-            resp.status_code = 0  # with this status_code, content returns None
-            resp.request = Request(method, url).prepare()
-            return resp
+
 
     def request(self, method, url, name=None, **kwargs):
         """
@@ -285,6 +271,22 @@ class HttpSession(requests.Session):
             )
 
         return response
+
+    def _send_request_safe_mode(self, method, url, **kwargs):
+        """
+        发送一个http请求，并捕获由于连接问题可能发生的任何异常
+        Safe mode has been removed from requests 1.x.
+        """
+        try:
+            return requests.Session.request(self, method, url, **kwargs)
+        except (MissingSchema, InvalidSchema, InvalidURL):
+            raise
+        except RequestException as ex:
+            resp = ApiResponse()
+            resp.error = ex
+            resp.status_code = 0  # with this status_code, content returns None
+            resp.request = Request(method, url).prepare()
+            return resp
 
 if __name__ == '__main__':
     url = "https://www.baidu.com"
