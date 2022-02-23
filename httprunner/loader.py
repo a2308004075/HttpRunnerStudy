@@ -123,17 +123,28 @@ def load_testcase(testcase: Dict) -> TestCase:
 
 
 def load_testcase_file(testcase_file: Text) -> TestCase:
-    """load testcase file and validate with pydantic model"""
+    """
+    读取 testcase 文件 并且 使用pydantic模块校验
+    将测试用例文件转成TestCase对象
+    """
+    # 1. 测试用例文件路径转成字典
     testcase_content = load_test_file(testcase_file)
+    # 2. 字典转成 TestCase 对象
     testcase_obj = load_testcase(testcase_content)
+    # 3. 将文件路径赋值给 对象里面的config下的path
     testcase_obj.config.path = testcase_file
+    # 4. 返回TestCase对象
     return testcase_obj
 
 
 def load_testsuite(testsuite: Dict) -> TestSuite:
+    """
+    测试套件，将套件字典 加载成TestSuite对象
+    """
     path = testsuite["config"]["path"]
     try:
-        # validate with pydantic TestCase model
+        # 使用pydantic TestCase模型进行验证
+        # 核心代码。将套件字典 加载成TestSuite对象
         testsuite_obj = TestSuite.parse_obj(testsuite)
     except ValidationError as ex:
         err_msg = f"TestSuite ValidationError:\nfile: {path}\nerror: {ex}"
@@ -143,8 +154,8 @@ def load_testsuite(testsuite: Dict) -> TestSuite:
 
 
 def load_dot_env_file(dot_env_path: Text) -> Dict:
-    """ load .env file.
-
+    """
+    读取.env文件内容转成字典并 设置到 环境变量
     Args:
         dot_env_path (str): .env file path
 
@@ -177,17 +188,20 @@ def load_dot_env_file(dot_env_path: Text) -> Dict:
             else:
                 raise exceptions.FileFormatError(".env format error")
 
+            # 字典env_variables_mapping进行key-value的复制操作
+            # strip() 方法用于移除字符串头尾指定的字符（默认为空格或换行符）或字符序列。
             env_variables_mapping[
                 variable.strip().decode("utf-8")
             ] = value.strip().decode("utf-8")
 
+    # 将字典设置到当前系统里
     utils.set_os_environ(env_variables_mapping)
     return env_variables_mapping
 
 
 def load_csv_file(csv_file: Text) -> List[Dict]:
-    """ load csv file and check file content format
-
+    """
+    读取csv文件并检查文件内容格式
     Args:
         csv_file (str): csv file path, csv file content is like below:
 
@@ -214,16 +228,17 @@ def load_csv_file(csv_file: Text) -> List[Dict]:
         if project_meta is None:
             raise exceptions.MyBaseFailure("load_project_meta() has not been called!")
 
-        # make compatible with Windows/Linux
+        # 让 Windows/Linux兼容
         csv_file = os.path.join(project_meta.RootDir, *csv_file.split("/"))
 
     if not os.path.isfile(csv_file):
-        # file path not exist
+        # 文件路径不存在
         raise exceptions.CSVNotFound(csv_file)
 
     csv_content_list = []
 
     with open(csv_file, encoding="utf-8") as csvfile:
+        # 核心代码。读取csv文件，DictReader会将第一行的内容（类标题）作为key值，第二行开始才是数据内容。
         reader = csv.DictReader(csvfile)
         for row in reader:
             csv_content_list.append(row)
@@ -232,18 +247,20 @@ def load_csv_file(csv_file: Text) -> List[Dict]:
 
 
 def load_folder_files(folder_path: Text, recursive: bool = True) -> List:
-    """ load folder path, return all files endswith .yml/.yaml/.json/_test.py in list.
-
+    """
+    加载目录下的文件，返回文件后缀.yml/.yaml/.json/_test.py，并放入list中
     Args:
-        folder_path (str): specified folder path to load
-        recursive (bool): load files recursively if True
+        folder_path (str): 指定用于加载的目录路径
+        recursive (bool): 如果为True，递归加载文件
 
     Returns:
         list: files endswith yml/yaml/json
     """
     if isinstance(folder_path, (list, set)):
         files = []
+        # set()创建一个无序不重复元素集，可进行关系测试，删除重复数据，还可以计算交集、差集、并集等。
         for path in set(folder_path):
+            # list.extend()以追加的方式扩展list
             files.extend(load_folder_files(path, recursive))
 
         return files
@@ -252,11 +269,12 @@ def load_folder_files(folder_path: Text, recursive: bool = True) -> List:
         return []
 
     file_list = []
-
+    # os.walk() 生成目录树中的文件名
     for dirpath, dirnames, filenames in os.walk(folder_path):
         filenames_list = []
 
         for filename in filenames:
+            # 核心代码。判断文件后缀是否以".yml", ".yaml", ".json", "_test.py"结尾
             if not filename.lower().endswith((".yml", ".yaml", ".json", "_test.py")):
                 continue
 
@@ -273,8 +291,8 @@ def load_folder_files(folder_path: Text, recursive: bool = True) -> List:
 
 
 def load_module_functions(module) -> Dict[Text, Callable]:
-    """ load python module functions.
-
+    """
+    加载一个模块的方法返回一个方法字典， 自定义函数实现的一部分
     Args:
         module: python module
 
@@ -308,22 +326,25 @@ def load_module_functions(module) -> Dict[Text, Callable]:
     module_functions = {}
     # vars() 函数返回对象object的属性和属性值的字典对象
     for name, item in vars(module).items():
+        # types.FunctionType 函数类型
         if isinstance(item, types.FunctionType):
+            # 方法名称 作为key 函数对象作为value
             module_functions[name] = item
 
     return module_functions
 
 
 def load_builtin_functions() -> Dict[Text, Callable]:
-    """ load builtin module functions
+    """
+    加载内置方法
     """
     return load_module_functions(builtin)
 
 
 def locate_file(start_path: Text, file_name: Text) -> Text:
-    """ locate filename and return absolute file path.
-        searching will be recursive upward until system root dir.
-
+    """
+        定位文件名并返回文件绝对路径.
+        向上递归搜索，指定系统根路径
     Args:
         file_name (str): target locate file name
         start_path (str): start locating path, maybe file path or directory path
@@ -360,7 +381,7 @@ def locate_file(start_path: Text, file_name: Text) -> Text:
 
 def locate_debugtalk_py(start_path: Text) -> Text:
     """ locate debugtalk.py file
-
+    找到debugtalk.py 绝对路径
     Args:
         start_path (str): start locating path,
             maybe testcase file path or directory path
@@ -380,7 +401,7 @@ def locate_debugtalk_py(start_path: Text) -> Text:
 
 def locate_project_root_directory(test_path: Text) -> Tuple[Text, Text]:
     """ locate debugtalk.py path as project root directory
-
+    找到项目根目录路径， 和 debugtalk.py 的路径
     Args:
         test_path: specified testfile path
 
@@ -416,8 +437,9 @@ def locate_project_root_directory(test_path: Text) -> Tuple[Text, Text]:
 
 
 def load_debugtalk_functions() -> Dict[Text, Callable]:
-    """ load project debugtalk.py module functions
-        debugtalk.py should be located in project root directory.
+    """
+        加载项目 debugtalk.py模块里的 functions
+        debugtalk.py应该位于项目根目录
 
     Returns:
         dict: debugtalk module functions mapping
