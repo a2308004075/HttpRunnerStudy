@@ -12,7 +12,7 @@ import platform
 import uuid
 from multiprocessing import Queue
 import itertools
-from typing import Dict, List, Any, Union, Text
+from typing import Dict, List, Any
 
 import sentry_sdk
 from loguru import logger
@@ -108,6 +108,10 @@ def lower_dict_keys(origin_dict):
     if not origin_dict or not isinstance(origin_dict, dict):
         return origin_dict
 
+    """
+    for key, value in origin_dict.items()
+        value
+    """
     return {key.lower(): value for key, value in origin_dict.items()}
 
 
@@ -119,24 +123,27 @@ def print_info(info_mapping):
 
     Examples:
         >>> info_mapping = {
-                "var_a": "hello",
-                "var_b": "world"
-            }
-        >>> info_mapping = {
-                "status_code": 500
-            }
+            "a": 1,
+            "t": (1, 2),
+            "b": {"b1": 123},
+            "c": None,
+            "d": [4, 5]}
         >>> print_info(info_mapping)
-        ==================== Output ====================
-        Key              :  Value
-        ---------------- :  ----------------------------
-        var_a            :  hello
-        var_b            :  world
-        ------------------------------------------------
+            ==================== Output ====================
+            Variable         : Value
+            ---------------- : -----------------------------
+            a                : 1
+            b                : {"b1": 123}
+            c                : None
+            d                : [4, 5]
+            ------------------------------------------------
 
     """
     if not info_mapping:
         return
 
+    # {:<16} 左对齐 (宽度为16)
+    #  {:<}  左对齐
     content_format = "{:<16} : {:<}\n"
     content = "\n==================== Output ====================\n"
     content += content_format.format("Variable", "Value")
@@ -148,7 +155,7 @@ def print_info(info_mapping):
             continue
         # 判断value 是 字典 或者 列表
         elif isinstance(value, (dict, list)):
-            # 核心代码。将字典转化为字符串
+            # 核心代码。将python对象编码成Json字符串
             value = json.dumps(value)
         elif value is None:
             value = "None"
@@ -209,7 +216,6 @@ def sort_dict_by_custom_order(raw_dict: Dict, custom_order: List):
         """
         获取list中指定元素坐标
         """
-        print(2222)
         try:
             return lst.index(item)
         except ValueError:
@@ -223,6 +229,16 @@ def sort_dict_by_custom_order(raw_dict: Dict, custom_order: List):
     :号后面为 方法体
     """
 
+    """
+    dict1 = {"C": 3, "D": 2, "A": 1, "B": 8}
+    for i in dict1.items():
+        print(i[0])
+    输出
+        C
+        D
+        A
+        B
+    """
     return dict(
         sorted(raw_dict.items(), key=lambda i: get_index_from_list(custom_order, i[0]))
     )
@@ -234,12 +250,30 @@ class ExtendJSONEncoder(json.JSONEncoder):
 
     json.JSONEncoder用于dict类型转换成标准Json字符串
     """
+    """
+    class A:
+    def add(self, x):
+        y = x + 1
+        print(y)
 
+
+    class B(A):
+        def add(self, x):
+            super().add(x)
+
+
+    b = B()
+    b.add(2)  # 3
+    """
+    """
+    对于，特殊的数据类型，例如，datatime() 时间类型，json.dumps不支持该数据类型的序列化；那么就可以通过自定义处理来扩展。
+    json.dump(summary, f, indent=4, ensure_ascii=False, cls=ExtendJSONEncoder)
+    """
     def default(self, obj):
         try:
             return super(ExtendJSONEncoder, self).default(obj)
         except (UnicodeDecodeError, TypeError):
-            # repr() 返回对象的规范字符串表示形式
+            # repr() 将对象转换为字符串形式
             return repr(obj)
 
 
@@ -259,8 +293,9 @@ def merge_variables(
         step_new_variables[key] = value
 
     # 浅复制了字典 并把其中的内容都弄过来了
-    merged_variables = copy.copy(variables_to_be_overridden)
+    # 如果merged_variables = variables_to_be_overridden这样赋值，那么在merged_variables.update时，原字典会被改变
     # 更新了复制出来的字典， 原字典不会改变
+    merged_variables = copy.copy(variables_to_be_overridden)
     merged_variables.update(step_new_variables)
     return merged_variables
 
@@ -270,6 +305,7 @@ def is_support_multiprocessing() -> bool:
     判断是否支持多进程，如：Android termux
     """
     try:
+        # 支持多进程的系统，执行Queue()才不会报错
         Queue()
         return True
     except (ImportError, OSError):
@@ -308,24 +344,48 @@ def gen_cartesian_product(*args: List[Dict]) -> List[Dict]:
     elif len(args) == 1:
         return args[0]
 
+    """
+    经过以上判断，只有args≥2时
+    """
+
     product_list = []
-    # product 笛卡尔积，相当于嵌套的for循环
+    # itertools.product(*args) 笛卡尔积，相当于嵌套的for循环
     for product_item_tuple in itertools.product(*args):
+        """
+        ({'a': 1}, {'x': 111, 'y': 112})
+        ({'a': 1}, {'x': 121, 'y': 122})
+        ({'a': 2}, {'x': 111, 'y': 112})
+        ({'a': 2}, {'x': 121, 'y': 122})
+        """
         product_item_dict = {}
         for item in product_item_tuple:
+            """
+            1 :{'a': 1}
+            1 :{'x': 111, 'y': 112}
+            2 :{'a': 1}
+            2 :{'x': 121, 'y': 122}
+            3 :{'a': 2}
+            3 :{'x': 111, 'y': 112}
+            4 :{'a': 2}
+            4 :{'x': 121, 'y': 122}
+            """
             product_item_dict.update(item)
 
         product_list.append(product_item_dict)
-
+    # [{'a': 1, 'x': 111, 'y': 112}, {'a': 1, 'x': 121, 'y': 122}, {'a': 2, 'x': 111, 'y': 112}, {'a': 2, 'x': 121, 'y': 122}]
     return product_list
 
 if __name__ == '__main__':
-    import decimal
-    class A(object):
-        pass
+    origin_dict = {
+        "Name": "",
+        "Request": "",
+        "URL": "",
+        "METHOD": "",
+        "Headers": "",
+        "Data": ""
+    }
+    print(lower_dict_keys(origin_dict))
 
-
-    print(type(decimal.Decimal("1.45")))
 
 
 
