@@ -27,10 +27,10 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 class ApiResponse(Response):
     """
-    继承了requests模块中的Response类，重写了里面的raise_for_status方法
+    继承了requests模块中的Response类，重写 raise_for_status 状态码异常方法
     """
     def raise_for_status(self):
-        # hasattr判断是否含有指定标记
+        # hasattr() 函数用于判断对象是否包含对应的属性
         if hasattr(self, "error") and self.error:
             raise self.error
         Response.raise_for_status(self)
