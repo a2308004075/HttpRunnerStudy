@@ -52,6 +52,16 @@ def get_req_resp_record(resp_obj: Response) -> ReqRespData:
         for key, value in req_or_resp.dict().items():
             # 如果value中还包含着dict或者list，就把value转成json格式
             if isinstance(value, dict) or isinstance(value, list):
+                # json.dumps 序列化时对中文默认使用的ascii编码,因此需要使用ensure_ascii=False来指定出中文
+                """
+                indent=4 表示每行缩进4字字节
+                {'age': 4, 'name': 'niuniuche', 'attribute': 'toy'}
+                {
+                    "age": 4,
+                    "name": "niuniuche",
+                    "attribute": "toy"
+                }
+                """
                 value = json.dumps(value, indent=4, ensure_ascii=False)
 
             msg += "{:<8} : {}\n".format(key, value)
@@ -89,7 +99,6 @@ def get_req_resp_record(resp_obj: Response) -> ReqRespData:
         body=request_body,
     )
 
-    # lower_dict_keys的作用是将字典中的key大写转小写
     log_print(request_data, "request")
 
     # 记录响应信息
@@ -99,6 +108,7 @@ def get_req_resp_record(resp_obj: Response) -> ReqRespData:
 
     if "image" in content_type:
         # response is image type, record bytes content only
+        # 二进制内容获取
         response_body = resp_obj.content
     else:
         try:
@@ -107,8 +117,10 @@ def get_req_resp_record(resp_obj: Response) -> ReqRespData:
         except ValueError:
             # only record at most 512 text charactors
             resp_text = resp_obj.text
+            # 长度处理
             response_body = omit_long_data(resp_text)
 
+    # 实例化ResponseData模型
     response_data = ResponseData(
         status_code=resp_obj.status_code,
         cookies=resp_obj.cookies or {},
@@ -121,10 +133,11 @@ def get_req_resp_record(resp_obj: Response) -> ReqRespData:
     # 在debug模式下打印响应日志
     log_print(response_data, "response")
 
+    # 实例化ReqRespData 其就是 RequestData ResponseData 组成
     req_resp_data = ReqRespData(request=request_data, response=response_data)
     return req_resp_data
 
-
+# 继承requests.Session
 class HttpSession(requests.Session):
     """
     Class for performing HTTP requests and holding (session-) cookies between requests (为了
@@ -145,6 +158,22 @@ class HttpSession(requests.Session):
         # TODO: fix
         self.data.req_resps.pop()
         self.data.req_resps.append(get_req_resp_record(resp_obj))
+
+    def _send_request_safe_mode(self, method, url, **kwargs):
+        """
+        发送一个http请求，并捕获由于连接问题可能发生的任何异常
+        Safe mode has been removed from requests 1.x.
+        """
+        try:
+            return requests.Session.request(self, method, url, **kwargs)
+        except (MissingSchema, InvalidSchema, InvalidURL):
+            raise
+        except RequestException as ex:
+            resp = ApiResponse()
+            resp.error = ex
+            resp.status_code = 0  # with this status_code, content returns None
+            resp.request = Request(method, url).prepare()
+            return resp
 
     def request(self, method, url, name=None, **kwargs):
         """
@@ -196,16 +225,24 @@ class HttpSession(requests.Session):
         """
         self.data = SessionData()
 
-        # timeout default to 120 seconds
+        # 设置了超时时间120s
         kwargs.setdefault("timeout", 120)
 
         # set stream to True, in order to get client/server IP/Port
         kwargs["stream"] = True
 
+        # 计算整个请求花费了多少时间
         start_timestamp = time.time()
         response = self._send_request_safe_mode(method, url, **kwargs)
+        """
+        round() 方法返回浮点数x的四舍五入值
+        round( x [, n]  )
+        x -- 数值表达式。
+        n -- 数值表达式，表示从小数点位数。
+        """
         response_time_ms = round((time.time() - start_timestamp) * 1000, 2)
 
+        # 定义了客户端ip地址和端口号、服务端ip地址和端口号
         try:
             client_ip, client_port = response.raw.connection.sock.getsockname()
             self.data.address.client_ip = client_ip
@@ -222,15 +259,15 @@ class HttpSession(requests.Session):
         except AttributeError as ex:
             logger.warning(f"failed to get server address info: {ex}")
 
-        # get length of the response content
+        # 计算了响应体的内容大小
         content_size = int(dict(response.headers).get("content-length") or 0)
 
-        # record the consumed time
+        # 记录了消耗时间
         self.data.stat.response_time_ms = response_time_ms
         self.data.stat.elapsed_ms = response.elapsed.microseconds / 1000.0
         self.data.stat.content_size = content_size
 
-        # record request and response histories, include 30X redirection
+        # 记录了request和response记录，包括重定向记录
         response_list = response.history + [response]
         self.data.req_resps = [
             get_req_resp_record(resp_obj) for resp_obj in response_list
@@ -249,18 +286,9 @@ class HttpSession(requests.Session):
 
         return response
 
-    def _send_request_safe_mode(self, method, url, **kwargs):
-        """
-        发送一个http请求，并捕获由于连接问题可能发生的任何异常
-        Safe mode has been removed from requests 1.x.
-        """
-        try:
-            return requests.Session.request(self, method, url, **kwargs)
-        except (MissingSchema, InvalidSchema, InvalidURL):
-            raise
-        except RequestException as ex:
-            resp = ApiResponse()
-            resp.error = ex
-            resp.status_code = 0  # with this status_code, content returns None
-            resp.request = Request(method, url).prepare()
-            return resp
+if __name__ == '__main__':
+    url = "https://www.baidu.com"
+    response = requests.get(url)
+    re_raw = response.raw.connection.sock
+    print(re_raw)
+    # response.raw.connection.sock.getsockname()
