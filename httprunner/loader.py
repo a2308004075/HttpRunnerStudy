@@ -246,10 +246,28 @@ def load_module_functions(module) -> Dict[Text, Callable]:
                 "func1_name": func1,
                 "func2_name": func2
             }
-
+        {
+        'equal': <function equal at 0x000001729137D430>,
+        'greater_than': <function greater_than at 0x000001729137D550>,
+        'less_than': <function less_than at 0x000001729137D5E0>,
+        'greater_or_equals': <function greater_or_equals at 0x000001729137D670>,
+        'less_or_equals': <function less_or_equals at 0x000001729137D700>,
+        'not_equal': <function not_equal at 0x000001729137D790>,
+        'string_equals': <function string_equals at 0x000001729137D820>,
+        'length_equal': <function length_equal at 0x000001729137D8B0>,
+        'length_greater_than': <function length_greater_than at 0x000001729137D940>,
+        'length_greater_or_equals': <function length_greater_or_equals at 0x000001729137D9D0>,
+        'length_less_than': <function length_less_than at 0x000001729137DA60>,
+        'length_less_or_equals': <function length_less_or_equals at 0x000001729137DAF0>,
+        'contains': <function contains at 0x000001729137DB80>,
+        'contained_by': <function contained_by at 0x000001729137DC10>,
+        'type_match': <function type_match at 0x000001729137DCA0>,
+        'regex_match': <function regex_match at 0x000001729137DD30>,
+        'startswith': <function startswith at 0x000001729137DDC0>,
+        'endswith': <function endswith at 0x000001729137DE50>}
     """
     module_functions = {}
-
+    # vars() 函数返回对象object的属性和属性值的字典对象
     for name, item in vars(module).items():
         if isinstance(item, types.FunctionType):
             module_functions[name] = item
@@ -452,3 +470,7 @@ def convert_relative_project_root_dir(abs_path: Text) -> Text:
         )
 
     return abs_path[len(_project_meta.RootDir) + 1:]
+
+
+if __name__ == '__main__':
+    pass
