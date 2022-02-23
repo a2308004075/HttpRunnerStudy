@@ -375,16 +375,6 @@ def gen_cartesian_product(*args: List[Dict]) -> List[Dict]:
     # [{'a': 1, 'x': 111, 'y': 112}, {'a': 1, 'x': 121, 'y': 122}, {'a': 2, 'x': 111, 'y': 112}, {'a': 2, 'x': 121, 'y': 122}]
     return product_list
 
-if __name__ == '__main__':
-    origin_dict = {
-        "Name": "",
-        "Request": "",
-        "URL": "",
-        "METHOD": "",
-        "Headers": "",
-        "Data": ""
-    }
-    print(lower_dict_keys(origin_dict))
 
 
 
