@@ -451,18 +451,22 @@ def load_debugtalk_functions() -> Dict[Text, Callable]:
     """
     # 加载 debugtalk.py模块
     try:
+        # 动态导入包
         imported_module = importlib.import_module("debugtalk")
     except Exception as ex:
         logger.error(f"error occurred in debugtalk.py: {ex}")
         sys.exit(1)
 
     # 重新加载用于更新先前加载的module
+    # 避免有修改的情况 重载包
     imported_module = importlib.reload(imported_module)
+    # 返回方法字典
     return load_module_functions(imported_module)
 
 
 def load_project_meta(test_path: Text, reload: bool = False) -> ProjectMeta:
     """ load testcases, .env, debugtalk.py functions.
+
         testcases folder is relative to project_root_directory
         by default, project_meta will be loaded only once, unless set reload to true.
 
@@ -479,6 +483,7 @@ def load_project_meta(test_path: Text, reload: bool = False) -> ProjectMeta:
     if project_meta and (not reload):
         return project_meta
 
+    # 实例化
     project_meta = ProjectMeta()
 
     if not test_path:
@@ -486,7 +491,7 @@ def load_project_meta(test_path: Text, reload: bool = False) -> ProjectMeta:
 
     debugtalk_path, project_root_directory = locate_project_root_directory(test_path)
 
-    # add project RootDir to sys.path
+    # 添加项目根目录到sys.path
     sys.path.insert(0, project_root_directory)
 
     # load .env file
@@ -505,7 +510,7 @@ def load_project_meta(test_path: Text, reload: bool = False) -> ProjectMeta:
     else:
         debugtalk_functions = {}
 
-    # locate project RootDir and load debugtalk.py functions
+    # 定位项目根目录 并 加载debugtalk.py的方法
     project_meta.RootDir = project_root_directory
     project_meta.functions = debugtalk_functions
     project_meta.debugtalk_path = debugtalk_path
@@ -514,8 +519,8 @@ def load_project_meta(test_path: Text, reload: bool = False) -> ProjectMeta:
 
 
 def convert_relative_project_root_dir(abs_path: Text) -> Text:
-    """ convert absolute path to relative path, based on project_meta.RootDir
-
+    """
+        基于project_meta.RootDir，绝对路径转为相对(项目根目录)路径
     Args:
         abs_path: absolute path
 
@@ -530,8 +535,5 @@ def convert_relative_project_root_dir(abs_path: Text) -> Text:
             f"project_meta.RootDir: {_project_meta.RootDir}"
         )
 
+    # 核心代码，通过切片方式
     return abs_path[len(_project_meta.RootDir) + 1:]
-
-
-if __name__ == '__main__':
-    pass
