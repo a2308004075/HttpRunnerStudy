@@ -170,12 +170,14 @@ def convert_testcase_path(testcase_abs_path: Text) -> Tuple[Text, Text]:
 def format_pytest_with_black(*python_paths: Text) -> NoReturn:
     logger.info("format pytest cases with black ...")
     try:
+        # 对单个python文件进行格式化
         if is_support_multiprocessing() or len(python_paths) <= 1:
             subprocess.run(["black", *python_paths])
         else:
             logger.warning(
                 "this system does not support multiprocessing well, format files one by one ..."
             )
+            # 对多个python文件进行格式化
             [subprocess.run(["black", path]) for path in python_paths]
     except subprocess.CalledProcessError as ex:
         capture_exception(ex)
