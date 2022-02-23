@@ -465,20 +465,24 @@ def load_debugtalk_functions() -> Dict[Text, Callable]:
 
 
 def load_project_meta(test_path: Text, reload: bool = False) -> ProjectMeta:
-    """ load testcases, .env, debugtalk.py functions.
+    """
+        加载 testcases，.env, debugtalk.py中的functions
 
-        testcases folder is relative to project_root_directory
-        by default, project_meta will be loaded only once, unless set reload to true.
+
+        testcases目录 相对于 project_root_directory
+        默认情况，project_meta只会被加载一次，除非reload设置为ture
 
     Args:
-        test_path (str): test file/folder path, locate project RootDir from this path.
-        reload: reload project meta if set true, default to false
+        test_path (str): test文件/目录路径，这个路径从 项目根目录开始
+        reload: 如果reload=true，重新加载project_meta，默认为false
 
     Returns:
         project loaded api/testcases definitions,
             environments and debugtalk.py functions.
 
     """
+
+    # 如果想为一个在函数外的变量重新赋值，并且这个变量会作用于许多函数中时，使用global定义
     global project_meta
     if project_meta and (not reload):
         return project_meta
