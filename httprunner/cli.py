@@ -26,8 +26,10 @@ def init_parser_run(subparsers):
 
 
 def main_run(extra_args) -> enum.IntEnum:
+    # 用于不抓用户调用传到开发者搭建的sentry_sdk监控
     capture_message("start to run")
-    # keep compatibility with v2
+
+    # 因为python2和python3的extra_args不同，要做兼容
     extra_args = ensure_cli_args(extra_args)
 
     tests_path_list = []
