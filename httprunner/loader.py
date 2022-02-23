@@ -1,36 +1,64 @@
 # 加载文件内容的方法
-import csv
-import importlib
-import json
-import os
-import sys
-import types
+"""
+这个文件主要是：
+    对yaml,json用例加载转换成用例模型、套件模型
+    预置函数加载成方法字典，
+    项目路径加载
+    变量写入环境
+可用资料
+    [importlib]. https://docs.python.org/zh-cn/3/library/importlib.html
+    [funcitons]. https://docs.python.org/zh-cn/3/library/functions.html
+    借助impotlib 动态导入module， vars内置函数解析module中的信息，
+    并将其处理和加入方法字典中name 作为 key， 函数对象作为value，来完成调用扩展函数的上半部分内容
+"""
+import csv  # 内置库：csv 读取
+import importlib    # 内置库 处理动态导包
+import json     # 内置库 json 处理
+import os       # 内置库 操作系统
+import sys      # 内置库 系统相关的参数和函数
+import types        # 内置库 动态类型创建和内置类型名称
 from typing import Tuple, Dict, Union, Text, List, Callable
 
-import yaml
+import yaml     # 处理yaml文件 pyyaml
 from loguru import logger
-from pydantic import ValidationError
+from pydantic import ValidationError        # 异常
 
-from httprunner import builtin, utils
-from httprunner import exceptions
+from httprunner import builtin, utils       # builtin 中存在预置的函数
+from httprunner import exceptions       # 自定义的失败，错误逻辑
 from httprunner.models import TestCase, ProjectMeta, TestSuite
 
+# pyyaml 异常处理
 try:
     # PyYAML version >= 5.1
     # ref: https://github.com/yaml/pyyaml/wiki/PyYAML-yaml.load(input)-Deprecation
+    """
+        执行yaml.load()出现警告信息:YAMLLoadWarning: callingyaml.load() without Loader=...
+        yaml5.1版本后弃用了yaml.load(file)这个用法，因为觉得很不安全，5.1版本之后就修改了需要指定Loader，
+    通过默认加载器（FullLoader）禁止执行任意函数。
+    通过下面两种方式处理：
+        1、yaml.load(a, Loader=yaml.FullLoader)
+        2、yaml.warnings({'YAMLLoadWarning': False})
+        Loader的几种加载方式：
+            BaseLoader--仅加载最基本的YAML。
+            SafeLoader--安全地加载YAML语言的子集。建议用于加载不受信任的输入。
+            FullLoader--加载完整的YAML语言。避免任意代码执行。这是当前（PyYAML 5.1）默认加载器调yaml.load(input)（发出警告后）。
+            UnsafeLoader--（也称为Loader向后兼容性）原始的Loader代码，可以通过不受信任的数据输入轻松利用。
+    """
     yaml.warnings({"YAMLLoadWarning": False})
 except AttributeError:
     pass
 
-
+# project_meta 信息为None
 project_meta: Union[ProjectMeta, None] = None
 
 
 def _load_yaml_file(yaml_file: Text) -> Dict:
-    """ load yaml file and check file content format
+    """
+    读取yaml文件并检查文件内容格式
     """
     with open(yaml_file, mode="rb") as stream:
         try:
+            # 核心代码，读取yaml文件
             yaml_content = yaml.load(stream)
         except yaml.YAMLError as ex:
             err_msg = f"YAMLError:\nfile: {yaml_file}\nerror: {ex}"
@@ -41,10 +69,12 @@ def _load_yaml_file(yaml_file: Text) -> Dict:
 
 
 def _load_json_file(json_file: Text) -> Dict:
-    """ load json file and check file content format
+    """
+    读取json文件并检查文件内容格式
     """
     with open(json_file, mode="rb") as data_file:
         try:
+            # 核心代码。读取json文件
             json_content = json.load(data_file)
         except json.JSONDecodeError as ex:
             err_msg = f"JSONDecodeError:\nfile: {json_file}\nerror: {ex}"
@@ -54,17 +84,20 @@ def _load_json_file(json_file: Text) -> Dict:
 
 
 def load_test_file(test_file: Text) -> Dict:
-    """load testcase/testsuite file content"""
+    """
+    读取testcase/testsuite文件内容，并返回文件内容
+    """
     if not os.path.isfile(test_file):
         raise exceptions.FileNotFound(f"test file not exists: {test_file}")
 
+    # os.path.splitext(test_file) 获取路径中文件后缀转换小写
     file_suffix = os.path.splitext(test_file)[1].lower()
     if file_suffix == ".json":
         test_file_content = _load_json_file(test_file)
     elif file_suffix in [".yaml", ".yml"]:
         test_file_content = _load_yaml_file(test_file)
     else:
-        # '' or other suffix
+        # '' or 其他后缀
         raise exceptions.FileFormatError(
             f"testcase/testsuite file should be YAML/JSON format, invalid format file: {test_file}"
         )
@@ -73,8 +106,14 @@ def load_test_file(test_file: Text) -> Dict:
 
 
 def load_testcase(testcase: Dict) -> TestCase:
+    """
+        将字典转成 TestCase对象
+        """
     try:
-        # validate with pydantic TestCase model
+        # 使用pydantic TestCase模型进行验证
+        # 当成实例化操作就行 TestCase.parse_obj(testcase)
+        # TestCase(**testcase) 和上面等效
+        # 核心代码。将字典转成 TestCase对象
         testcase_obj = TestCase.parse_obj(testcase)
     except ValidationError as ex:
         err_msg = f"TestCase ValidationError:\nerror: {ex}\ncontent: {testcase}"
@@ -388,14 +427,14 @@ def load_debugtalk_functions() -> Dict[Text, Callable]:
             }
 
     """
-    # load debugtalk.py module
+    # 加载 debugtalk.py模块
     try:
         imported_module = importlib.import_module("debugtalk")
     except Exception as ex:
         logger.error(f"error occurred in debugtalk.py: {ex}")
         sys.exit(1)
 
-    # reload to refresh previously loaded module
+    # 重新加载用于更新先前加载的module
     imported_module = importlib.reload(imported_module)
     return load_module_functions(imported_module)
 
