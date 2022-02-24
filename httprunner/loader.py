@@ -74,7 +74,7 @@ def _load_json_file(json_file: Text) -> Dict:
     """
     with open(json_file, mode="rb") as data_file:
         try:
-            # 核心代码。读取json文件
+            # 核心代码。加载json文件
             json_content = json.load(data_file)
         except json.JSONDecodeError as ex:
             err_msg = f"JSONDecodeError:\nfile: {json_file}\nerror: {ex}"
@@ -87,10 +87,12 @@ def load_test_file(test_file: Text) -> Dict:
     """
     读取testcase/testsuite文件内容，并返回文件内容
     """
+    # 判断是否为文件
     if not os.path.isfile(test_file):
         raise exceptions.FileNotFound(f"test file not exists: {test_file}")
 
-    # os.path.splitext(test_file) 获取路径中文件后缀转换小写
+    # os.path.splitext() 将文件名和扩展名分开
+    # os.path.split() 返回文件的路径和文件名
     file_suffix = os.path.splitext(test_file)[1].lower()
     if file_suffix == ".json":
         test_file_content = _load_json_file(test_file)
