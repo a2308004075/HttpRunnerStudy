@@ -1,5 +1,8 @@
 # 定义各种model类,以BaseModel为父类
-
+"""
+可用资料
+    [pydantic]https://blog.csdn.net/codename_cys/article/details/107675748
+"""
 import os
 from enum import Enum
 from typing import Any
