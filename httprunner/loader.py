@@ -58,7 +58,7 @@ def _load_yaml_file(yaml_file: Text) -> Dict:
     """
     with open(yaml_file, mode="rb") as stream:
         try:
-            # 核心代码，读取yaml文件
+            # 核心代码，加载yaml文件
             yaml_content = yaml.load(stream)
         except yaml.YAMLError as ex:
             err_msg = f"YAMLError:\nfile: {yaml_file}\nerror: {ex}"
