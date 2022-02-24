@@ -225,6 +225,7 @@ def load_csv_file(csv_file: Text) -> List[Dict]:
         ]
 
     """
+    # os.path.isabs()用于检查指定的路径是否为绝对路径
     if not os.path.isabs(csv_file):
         global project_meta
         if project_meta is None:
